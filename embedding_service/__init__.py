@@ -15,7 +15,7 @@ def create_app():
 
     @app.route("/embed", methods=["POST"])
     def endpoint2():
-        corpus = request.json["corpus"]
+        corpus = request.json["corpus"].lower()
         return {"embedding": app.model.encode(corpus).tolist()}
 
     return app
