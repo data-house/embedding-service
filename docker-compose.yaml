@@ -6,7 +6,7 @@ networks:
 
 services:
   embedding-service:
-    image: embedding-service
+    image: "ghcr.io/data-house/embedding-service:main"
     networks:
       - web
     environment:
