@@ -1,11 +1,6 @@
-FROM python:3.9-slim-bullseye as build-image
+FROM python:3.9.17-slim-bullseye as build-image
 
 WORKDIR /app
-
-# download pretrained model
-RUN apt-get update &&\
-	apt-get -y upgrade &&\
-	rm -rf /var/lib/apt/lists/*
 
 # install requirements
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -14,14 +9,23 @@ RUN python -m venv --copies /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY requirements.txt .
+
 RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
-FROM python:3.9-slim-bullseye AS runtime-image
+FROM python:3.9.17-slim-bullseye AS runtime-image
 
-# securty update
-RUN apt-get update &&\
-	apt-get -y upgrade &&\
-	rm -rf /var/lib/apt/lists/*
+LABEL maintainer="OneOffTech <info@oneofftech.xyz>" \
+  org.label-schema.name="data-house/embedding-service" \
+  org.label-schema.description="Docker image for the Data House Embedding service." \
+  org.label-schema.schema-version="1.0" \
+  org.label-schema.vcs-url="https://github.com/data-house/embedding-service"
+
+RUN apt-get update -yqq && \
+    apt-get install -yqq --no-install-recommends tini \
+    && apt-get autoremove -yq --purge \
+    && apt-get autoclean -yq \
+    && apt-get clean \
+    && rm -rf /var/cache/apt/ /var/lib/apt/lists/* /var/log/* /tmp/* /var/tmp/* /usr/share/doc /usr/share/doc-base /usr/share/groff/* /usr/share/info/* /usr/share/linda/* /usr/share/lintian/overrides/* /usr/share/locale/* /usr/share/man/* /usr/share/locale/* /usr/share/gnome/help/*/* /usr/share/doc/kde/HTML/*/* /usr/share/omf/*/*-*.emf
 
 # switch to app workdir
 WORKDIR /app
@@ -34,4 +38,8 @@ COPY gunicorn.sh ./
 
 RUN chmod +x ./gunicorn.sh
 
-ENTRYPOINT ["./gunicorn.sh"]
+EXPOSE 5000/tcp
+
+ENTRYPOINT ["tini", "--"]
+
+CMD ["/app/gunicorn.sh"]
